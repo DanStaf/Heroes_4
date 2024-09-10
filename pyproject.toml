@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "heroes-4"
+version = "0.1.0"
+description = ""
+authors = ["DanStaf <danstaf@mail.ru>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+django = "4.2"
+psycopg2 = "^2.9.9"
+pillow = "^10.4.0"
+python-dotenv = "^1.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
