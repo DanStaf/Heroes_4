@@ -4,7 +4,7 @@
 - Python
 - Postgres
 - Django
+- DRF
 
-?- DRF
 ?- django_filters 
 ?- JWT
