@@ -2,18 +2,32 @@ import datetime
 
 from django.db import models
 
-# Create your models here.
+
+class Cell(models.Model):
+
+    DT_CHOICES = [
+        ("сб 09:00", "сб 09:00"),
+        ("сб 15:00", "сб 15:00"),
+        ("вс 09:00", "вс 09:00"),
+        ("вс 15:00", "вс 15:00"),
+    ]
+
+    location = models.CharField(max_length=50, verbose_name='Город (локация)')
+    day_time = models.CharField(max_length=50, choices=DT_CHOICES, verbose_name='Дата и время тренировки')
+
+    def __str__(self):
+        return f'{self.location} {self.day_time}'
+
+    class Meta:
+        verbose_name = 'ячейка'
+        verbose_name_plural = 'ячейки'
 
 
 class Parent(models.Model):
     """
-involvement int REFERENCES involvements(id), -- участие (ШМ, институт, вожатая, гостевой, выбыла, наставник, стажер, ...)
 feedback boolean, -- отзыв?
-
-участие = список записей: тип(ШМ, СД, вож, наст), дата с, дата по
-или статус
-
 """
+
     DAD = "Папа"
     MOM = "Мама"
     GR_M = "Бабушка"
@@ -33,9 +47,6 @@ feedback boolean, -- отзыв?
     sex = models.CharField(max_length=50, choices=PARENT_CHOICES, default=MOM, verbose_name='Пол')
     phone = models.PositiveBigIntegerField(verbose_name='Телефон')
 
-    # team = models.JSONField(verbose_name='Участие')
-    # участие = список записей: тип(ШМ, СД, вож, наст), дата с, дата по
-
     def __str__(self):
         return f'{self.sex}: {self.name} {self.surname}'
 
@@ -46,18 +57,11 @@ feedback boolean, -- отзыв?
 
 class Hero(models.Model):
     """
-mother_id int REFERENCES parents(id) NOT NULL,
-father_id int REFERENCES parents(id),
-mentor_id int REFERENCES mentors(id),
-cell_id int REFERENCES cells(id), -- ячейка (локация, время тренировки)
 new boolean,
 first_training_date date,
 planned_first_training_date date,
 profile boolean, -- анкета
-photo text
-
-
-
+photo
 """
 
     BOY = "Мальчик"
@@ -75,16 +79,6 @@ photo text
 
     parents = models.ManyToManyField(Parent, verbose_name='Родители')
 
-    # team = models.JSONField(verbose_name='Отряд')
-    # отряд = список записей: тип(мощные, отв, с мамой, пред_к, командиры), дата с, дата по
-
-    # рассылки клиентам many to many
-    # ребята в отряды. нужны виды отрядов и связь.
-
-    # сущность "курс" или "статус" или "состояние, настрой"
-    # ребенок, отряд, с, по
-    # родитель, программа, с, по
-
     def __str__(self):
         return f'Герой: {self.name} {self.surname}'
 
@@ -94,15 +88,6 @@ photo text
 
 
 class ParentStatus(models.Model):
-    """
-involvements
-name varchar(100) -- участие (ШМ, институт, вожатая, гостевой, выбыла, наставник, ...
-
-products
-description varchar(100), -- 4 тренировки, 12 тренировок, слёт, ...
-price int
-
-"""
 
     PROGRAM_CHOICES = [
         ("Сила Дружбы", "Сила Дружбы"),
@@ -121,6 +106,7 @@ price int
     type = models.CharField(max_length=50, choices=PROGRAM_CHOICES, verbose_name='Вид программы')
     start_from = models.DateField(verbose_name='с')
     stop_at = models.DateField(verbose_name='по', null=True, blank=True)
+    cell = models.ForeignKey(Cell, verbose_name='Ячейка', on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return f'{self.parent} ({self.type}) {"+" if self.is_active() else "-"}'
@@ -132,11 +118,6 @@ price int
     class Meta:
         verbose_name = 'статус родителя'
         verbose_name_plural = 'статусы родителей'
-
-
-# сущность "курс" или "статус" или "состояние, настрой"
-# ребенок, отряд, с, по
-# родитель, программа, с, по
 
 
 class HeroStatus(models.Model):
@@ -154,6 +135,8 @@ class HeroStatus(models.Model):
     type = models.CharField(max_length=50, choices=TEAM_CHOICES, verbose_name='Вид отряда')
     start_from = models.DateField(verbose_name='с')
     stop_at = models.DateField(verbose_name='по', null=True, blank=True)
+    cell = models.ForeignKey(Cell, verbose_name='Ячейка', on_delete=models.CASCADE, null=True, blank=True)
+    mentor = models.ForeignKey(Parent, verbose_name='Наставник', on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return f'{self.hero} ({self.type}) {"+" if self.is_active() else "-"}'
@@ -165,3 +148,52 @@ class HeroStatus(models.Model):
     class Meta:
         verbose_name = 'статус героя'
         verbose_name_plural = 'статусы героев'
+
+
+class Training(models.Model):
+
+    mentor = models.ForeignKey(Parent, verbose_name='Наставник', on_delete=models.CASCADE)
+    date = models.DateField(verbose_name='Дата тренировки')
+    cell = models.ForeignKey(Cell, verbose_name='Ячейка', on_delete=models.CASCADE, null=True, blank=True)
+
+    heroes = models.ManyToManyField(Hero, verbose_name='Явка героев')
+
+    # comments ?
+
+    def __str__(self):
+        return f'Тренировка: {self.date} {self.cell}'
+
+    class Meta:
+        verbose_name = 'тренировка'
+        verbose_name_plural = 'тренировки'
+
+
+class PaymentType(models.Model):
+
+    title = models.CharField(max_length=50, verbose_name='Вид платежа')
+    value = models.PositiveIntegerField(verbose_name='Стоимость')
+
+    # comments ?
+
+    def __str__(self):
+        return f'Абонемент: {self.title} ({self.value} р.)'
+
+    class Meta:
+        verbose_name = 'абонемент'
+        verbose_name_plural = 'абонементы'
+
+
+class Payment(models.Model):
+
+    parent = models.ForeignKey(Parent, verbose_name='Родитель', on_delete=models.CASCADE)
+    date = models.DateField(verbose_name='Дата оплаты')
+    type = models.ForeignKey(PaymentType, verbose_name='Вид платежа', on_delete=models.CASCADE)
+
+    # comments ?
+
+    def __str__(self):
+        return f'Оплата: {self.parent} {self.date}'
+
+    class Meta:
+        verbose_name = 'платёж'
+        verbose_name_plural = 'платежи'
