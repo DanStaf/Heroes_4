@@ -37,8 +37,7 @@ feedback boolean, -- отзыв?
     # участие = список записей: тип(ШМ, СД, вож, наст), дата с, дата по
 
     def __str__(self):
-        sex_ = 'Папа' if self.sex else 'Мама'
-        return f'{sex_}: {self.name} {self.surname}'
+        return f'{self.sex}: {self.name} {self.surname}'
 
     class Meta:
         verbose_name = 'родитель'
@@ -74,6 +73,8 @@ photo text
     sex = models.CharField(max_length=50, choices=HERO_CHOICES, verbose_name='Пол')
     birth_date = models.DateField(verbose_name='Дата рождения')
 
+    parents = models.ManyToManyField(Parent, verbose_name='Родители')
+
     # team = models.JSONField(verbose_name='Отряд')
     # отряд = список записей: тип(мощные, отв, с мамой, пред_к, командиры), дата с, дата по
 
@@ -92,7 +93,7 @@ photo text
         verbose_name_plural = 'герои'
 
 
-class Program(models.Model):
+class ParentStatus(models.Model):
     """
 involvements
 name varchar(100) -- участие (ШМ, институт, вожатая, гостевой, выбыла, наставник, ...
@@ -122,15 +123,15 @@ price int
     stop_at = models.DateField(verbose_name='по', null=True, blank=True)
 
     def __str__(self):
-        return f'{self.parent} {self.type} {"+" if self.is_active() else "-"}'
+        return f'{self.parent} ({self.type}) {"+" if self.is_active() else "-"}'
 
     def is_active(self):
-        today = datetime.datetime.now()
+        today = datetime.datetime.now().date()
         return (self.start_from < today) and (self.stop_at is None)
 
     class Meta:
-        verbose_name = 'программа'
-        verbose_name_plural = 'программы'
+        verbose_name = 'статус родителя'
+        verbose_name_plural = 'статусы родителей'
 
 
 # сущность "курс" или "статус" или "состояние, настрой"
@@ -138,7 +139,7 @@ price int
 # родитель, программа, с, по
 
 
-class Team(models.Model):
+class HeroStatus(models.Model):
 
     TEAM_CHOICES = [
         ("Мощный", "Мощный"),
@@ -155,12 +156,12 @@ class Team(models.Model):
     stop_at = models.DateField(verbose_name='по', null=True, blank=True)
 
     def __str__(self):
-        return f'{self.hero} {self.type} {"+" if self.is_active() else "-"}'
+        return f'{self.hero} ({self.type}) {"+" if self.is_active() else "-"}'
 
     def is_active(self):
-        today = datetime.datetime.now()
+        today = datetime.datetime.now().date()
         return (self.start_from < today) and (self.stop_at is None)
 
     class Meta:
-        verbose_name = 'отряд'
-        verbose_name_plural = 'отряды'
+        verbose_name = 'статус героя'
+        verbose_name_plural = 'статусы героев'
